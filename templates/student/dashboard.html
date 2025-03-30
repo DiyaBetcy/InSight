@@ -1,0 +1,440 @@
+{% extends "layout.html" %}
+
+{% block title %}Student Dashboard - {{ title }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="display-5 fw-bold">Welcome, {{ student.first_name }}!</h1>
+                <p class="lead text-muted">Track your attendance and manage courses</p>
+            </div>
+            <div class="d-none d-md-block">
+                <div class="p-3 rounded-3 bg-opacity-10 bg-primary border border-primary border-opacity-25">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <span class="display-6"><i class="fas fa-calendar-check text-primary"></i></span>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">{{ "Today's Date" }}</h5>
+                            <h6 class="text-muted">{{ now().strftime('%A, %B %d, %Y') if now is defined else "March 28, 2025" }}</h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header bg-gradient-info text-white py-3">
+                <h3 class="mb-0 fw-bold"><i class="fas fa-user-graduate me-2"></i>Student Profile</h3>
+            </div>
+            <div class="card-body text-center py-4">
+                {% if student.profile_image %}
+                    <img src="{{ student.profile_image }}" class="profile-img mb-4" alt="Profile Photo">
+                {% else %}
+                    <div class="profile-img bg-secondary d-flex align-items-center justify-content-center mx-auto mb-4">
+                        <span class="text-white" style="font-size: 60px;">{{ student.first_name[0] }}{{ student.last_name[0] }}</span>
+                    </div>
+                {% endif %}
+                
+                <h3 class="mb-1">{{ student.first_name }} {{ student.last_name }}</h3>
+                <p class="text-muted mb-3">{{ current_user.email }}</p>
+                
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('student_profile') }}" class="btn btn-primary">
+                        <i class="fas fa-edit me-1"></i> Update Profile
+                    </a>
+                </div>
+                
+                <div class="mt-4 text-start">
+                    <div class="d-flex justify-content-between p-2 border-bottom">
+                        <span class="text-muted">Face Recognition</span>
+                        <span class="fw-bold {% if student.face_encoding %}text-success{% else %}text-danger{% endif %}">
+                            {% if student.face_encoding %}
+                                <i class="fas fa-check-circle me-1"></i>Registered
+                            {% else %}
+                                <i class="fas fa-times-circle me-1"></i>Not Registered
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between p-2 border-bottom">
+                        <span class="text-muted">Enrolled Courses</span>
+                        <span class="fw-bold">{{ courses|length }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card shadow h-100">
+            <div class="card-header bg-gradient-primary text-white py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0 fw-bold"><i class="fas fa-chart-pie me-2"></i>Attendance Summary</h3>
+                    {% if attendance_stats %}
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-primary border-0" type="button" id="chartViewDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-chart-bar me-1"></i> Chart View
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="chartViewDropdown">
+                            <li><a class="dropdown-item" href="#" onclick="switchChartType('bar'); return false;"><i class="fas fa-chart-bar me-2"></i>Bar Chart</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="switchChartType('pie'); return false;"><i class="fas fa-chart-pie me-2"></i>Pie Chart</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="switchChartType('line'); return false;"><i class="fas fa-chart-line me-2"></i>Line Chart</a></li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body p-4">
+                {% if attendance_stats %}
+                    <canvas id="attendanceChart" height="250"></canvas>
+                {% else %}
+                    <div class="alert alert-info d-flex align-items-center p-4">
+                        <i class="fas fa-info-circle fs-3 me-3 text-info"></i>
+                        <div>
+                            <h5 class="alert-heading mb-1">No Attendance Data</h5>
+                            <p class="mb-0">You are not enrolled in any courses yet or have no attendance records. Enroll in courses to start tracking your attendance.</p>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card shadow">
+            <div class="card-header bg-gradient-secondary text-white py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0 fw-bold"><i class="fas fa-book me-2"></i>Enrolled Courses</h3>
+                    <a href="{{ url_for('browse_courses') }}" class="btn btn-light btn-sm">
+                        <i class="fas fa-plus-circle me-1"></i> Find Courses
+                    </a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                {% if courses %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">Course</th>
+                                    <th>Instructor</th>
+                                    <th class="text-center">Sessions</th>
+                                    <th class="text-center">Present</th>
+                                    <th class="text-center">Attendance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for course in courses %}
+                                    {% set stats = attendance_stats|selectattr('course', 'equalto', course.name)|first %}
+                                    <tr>
+                                        <td class="ps-4">
+                                            <div class="d-flex align-items-center">
+                                                <div class="me-3">
+                                                    <div class="icon-shape bg-light text-primary rounded p-1" style="width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center;">
+                                                        <i class="fas fa-graduation-cap"></i>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <h6 class="mb-0">{{ course.name }}</h6>
+                                                    {% if course.description %}
+                                                    <small class="text-muted">{{ course.description|truncate(50) }}</small>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <span>{{ course.teacher.first_name }} {{ course.teacher.last_name }}</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">{{ stats.total_sessions }}</td>
+                                        <td class="text-center">{{ stats.present_sessions }}</td>
+                                        <td>
+                                            <div class="d-flex align-items-center justify-content-center">
+                                                <div class="progress flex-grow-1 me-2" style="max-width: 150px;">
+                                                    <div class="progress-bar 
+                                                        {% if stats.attendance_percentage >= 75 %}bg-success
+                                                        {% elif stats.attendance_percentage >= 50 %}bg-warning
+                                                        {% else %}bg-danger{% endif %}" 
+                                                        role="progressbar" 
+                                                        style="width: {{ stats.attendance_percentage }}%;" 
+                                                        aria-valuenow="{{ stats.attendance_percentage }}" 
+                                                        aria-valuemin="0" 
+                                                        aria-valuemax="100">
+                                                    </div>
+                                                </div>
+                                                <span class="fw-bold {% if stats.attendance_percentage >= 75 %}text-success{% elif stats.attendance_percentage >= 50 %}text-warning{% else %}text-danger{% endif %}">
+                                                    {{ stats.attendance_percentage }}%
+                                                </span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-center p-4 border-top">
+                        <a href="{{ url_for('browse_courses') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-plus-circle me-1"></i> Enroll in More Courses
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center p-5">
+                        <div class="py-4">
+                            <i class="fas fa-book-open fa-4x text-muted mb-3"></i>
+                            <h4>No Courses Found</h4>
+                            <p class="text-muted">You are not enrolled in any courses yet.</p>
+                            <a href="{{ url_for('browse_courses') }}" class="btn btn-primary mt-2">
+                                <i class="fas fa-search me-1"></i> Browse Available Courses
+                            </a>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% if attendance_stats %}
+        // Chart data
+        const courseNames = [{% for stat in attendance_stats %}'{{ stat.course }}',{% endfor %}];
+        const attendanceData = [{% for stat in attendance_stats %}{{ stat.attendance_percentage }},{% endfor %}];
+        const presentSessions = [{% for stat in attendance_stats %}{{ stat.present_sessions }},{% endfor %}];
+        const totalSessions = [{% for stat in attendance_stats %}{{ stat.total_sessions }},{% endfor %}];
+        
+        // Colors based on percentage
+        const backgroundColors = [
+            {% for stat in attendance_stats %}
+                {% if stat.attendance_percentage >= 75 %}'rgba(40, 167, 69, 0.7)'
+                {% elif stat.attendance_percentage >= 50 %}'rgba(255, 193, 7, 0.7)'
+                {% else %}'rgba(220, 53, 69, 0.7)'{% endif %},
+            {% endfor %}
+        ];
+        
+        const borderColors = [
+            {% for stat in attendance_stats %}
+                {% if stat.attendance_percentage >= 75 %}'rgba(40, 167, 69, 1)'
+                {% elif stat.attendance_percentage >= 50 %}'rgba(255, 193, 7, 1)'
+                {% else %}'rgba(220, 53, 69, 1)'{% endif %},
+            {% endfor %}
+        ];
+        
+        // Create the chart
+        const ctx = document.getElementById('attendanceChart').getContext('2d');
+        window.attendanceChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: courseNames,
+                datasets: [{
+                    label: 'Attendance Percentage',
+                    data: attendanceData,
+                    backgroundColor: backgroundColors,
+                    borderColor: borderColors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            afterLabel: function(context) {
+                                const index = context.dataIndex;
+                                return [
+                                    `Present: ${presentSessions[index]} of ${totalSessions[index]} sessions`,
+                                    `Attendance: ${attendanceData[index]}%`
+                                ];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Attendance (%)'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Function to switch chart type
+        window.switchChartType = function(newType) {
+            if (!window.attendanceChart) return;
+            
+            // Destroy the current chart
+            window.attendanceChart.destroy();
+            
+            // Recreate with the new type
+            let newOptions = {};
+            
+            if (newType === 'pie' || newType === 'doughnut') {
+                newOptions = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const index = context.dataIndex;
+                                    return [
+                                        `${courseNames[index]}: ${attendanceData[index]}%`,
+                                        `Present: ${presentSessions[index]} of ${totalSessions[index]} sessions`
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                };
+            } else {
+                newOptions = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function(context) {
+                                    const index = context.dataIndex;
+                                    return [
+                                        `Present: ${presentSessions[index]} of ${totalSessions[index]} sessions`,
+                                        `Attendance: ${attendanceData[index]}%`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Attendance (%)'
+                            }
+                        }
+                    }
+                };
+            }
+            
+            window.attendanceChart = new Chart(ctx, {
+                type: newType,
+                data: {
+                    labels: courseNames,
+                    datasets: [{
+                        label: 'Attendance Percentage',
+                        data: attendanceData,
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: newOptions
+            });
+        };
+    {% endif %}
+});
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% if attendance_stats %}
+        // Chart data
+        const courseNames = [{% for stat in attendance_stats %}'{{ stat.course }}',{% endfor %}];
+        const attendanceData = [{% for stat in attendance_stats %}{{ stat.attendance_percentage }},{% endfor %}];
+        
+        // Create the chart
+        const ctx = document.getElementById('attendanceChart').getContext('2d');
+        const attendanceChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: courseNames,
+                datasets: [{
+                    label: 'Attendance Percentage',
+                    data: attendanceData,
+                    backgroundColor: [
+                        {% for stat in attendance_stats %}
+                            {% if stat.attendance_percentage >= 75 %}'rgba(40, 167, 69, 0.7)'
+                            {% elif stat.attendance_percentage >= 50 %}'rgba(255, 193, 7, 0.7)'
+                            {% else %}'rgba(220, 53, 69, 0.7)'{% endif %},
+                        {% endfor %}
+                    ],
+                    borderColor: [
+                        {% for stat in attendance_stats %}
+                            {% if stat.attendance_percentage >= 75 %}'rgba(40, 167, 69, 1)'
+                            {% elif stat.attendance_percentage >= 50 %}'rgba(255, 193, 7, 1)'
+                            {% else %}'rgba(220, 53, 69, 1)'{% endif %},
+                        {% endfor %}
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Attendance (%)'
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            afterLabel: function(context) {
+                                const index = context.dataIndex;
+                                const present = {{ attendance_stats|map(attribute='present_sessions')|list }}[index];
+                                const total = {{ attendance_stats|map(attribute='total_sessions')|list }}[index];
+                                return `Present: ${present} of ${total} sessions`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    {% endif %}
+});
+</script>
+{% endblock %}

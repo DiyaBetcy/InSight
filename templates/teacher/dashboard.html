@@ -1,0 +1,112 @@
+{% extends "layout.html" %}
+
+{% block title %}Teacher Dashboard - {{ title }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="display-5">Welcome, {{ teacher.first_name }}!</h1>
+        <p class="lead">Manage your courses and track student attendance</p>
+    </div>
+</div>
+
+{% if courses %}
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Attendance Overview</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="attendanceChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        {% for course in courses %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-header bg-secondary">
+                        <h4 class="mb-0 text-white">{{ course.name }}</h4>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text text-muted">{{ course.description }}</p>
+                        
+                        {% set stats = course_stats|selectattr('course', 'equalto', course.name)|first %}
+                        
+                        <div class="mb-3">
+                            <p class="mb-1">Today's Attendance:</p>
+                            <div class="progress">
+                                <div class="progress-bar bg-info" role="progressbar" 
+                                     style="width: {{ stats.today_percentage }}%;" 
+                                     aria-valuenow="{{ stats.today_percentage }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                    {{ stats.today_percentage }}%
+                                </div>
+                            </div>
+                            <small class="text-muted">{{ stats.present_today }} of {{ stats.student_count }} students present</small>
+                        </div>
+                    </div>
+                    <div class="card-footer d-flex justify-content-between">
+                        <a href="{{ url_for('capture_attendance', course_id=course.id) }}" class="btn btn-primary">
+                            <i class="fas fa-camera me-1"></i> Take Attendance
+                        </a>
+                        <a href="{{ url_for('attendance_list', course_id=course.id) }}" class="btn btn-secondary">
+                            <i class="fas fa-list me-1"></i> View Records
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="row">
+        <div class="col">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                You don't have any courses yet. <a href="{{ url_for('manage_courses') }}">Create a course</a> to get started.
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% if courses and course_stats %}
+        // Get course data for the chart
+        const courseNames = [{% for stat in course_stats %}'{{ stat.course }}',{% endfor %}];
+        const attendanceData = [{% for stat in course_stats %}{{ stat.today_percentage }},{% endfor %}];
+        
+        // Create the chart
+        const ctx = document.getElementById('attendanceChart').getContext('2d');
+        const attendanceChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: courseNames,
+                datasets: [{
+                    label: 'Today\'s Attendance (%)',
+                    data: attendanceData,
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+    {% endif %}
+});
+</script>
+{% endblock %}

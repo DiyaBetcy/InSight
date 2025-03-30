@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Teacher Dashboard - Facial Recognition Attendance System{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="fas fa-chalkboard-teacher me-2"></i>Teacher Dashboard</h2>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Welcome, {{ current_user.username }}</h5>
+            </div>
+            <div class="card-body">
+                <p>This is your teacher dashboard where you can manage your courses, take attendance, and view attendance statistics.</p>
+                <a href="{{ url_for('attendance.create_course') }}" class="btn btn-success">
+                    <i class="fas fa-plus-circle me-1"></i>Create New Course
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h3 class="mb-3">Your Courses</h3>
+
+{% if course_stats %}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-4">
+        {% for stat in course_stats %}
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0">{{ stat.course.name }}</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text"><strong>Course Code:</strong> {{ stat.course.code }}</p>
+                        <p class="card-text"><strong>Students Enrolled:</strong> {{ stat.enrolled_students }}</p>
+                        <p class="card-text"><strong>Total Sessions:</strong> {{ stat.total_sessions }}</p>
+                        <p class="card-text"><strong>Average Attendance:</strong> {{ stat.avg_attendance }}%</p>
+                        
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('attendance.course_details', course_id=stat.course.id) }}" class="btn btn-info">
+                                <i class="fas fa-info-circle me-1"></i>Details
+                            </a>
+                            <a href="{{ url_for('attendance.take_attendance', course_id=stat.course.id) }}" class="btn btn-primary">
+                                <i class="fas fa-camera me-1"></i>Take Attendance
+                            </a>
+                            <a href="{{ url_for('attendance.view_attendance', course_id=stat.course.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-list-alt me-1"></i>View Attendance
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>You haven't created any courses yet. 
+        <a href="{{ url_for('attendance.create_course') }}" class="alert-link">Create your first course</a>.
+    </div>
+{% endif %}
+
+<!-- Statistics Section -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Attendance Overview</h5>
+            </div>
+            <div class="card-body">
+                {% if course_stats %}
+                    <canvas id="attendanceChart" width="400" height="200"></canvas>
+                {% else %}
+                    <p class="text-center">No data available yet. Create courses and take attendance to see statistics.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if course_stats %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('attendanceChart').getContext('2d');
+        
+        const courseNames = [{% for stat in course_stats %}'{{ stat.course.name }}',{% endfor %}];
+        const avgAttendance = [{% for stat in course_stats %}{{ stat.avg_attendance }},{% endfor %}];
+        
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: courseNames,
+                datasets: [{
+                    label: 'Average Attendance (%)',
+                    data: avgAttendance,
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Average Attendance by Course'
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endif %}
+{% endblock %}

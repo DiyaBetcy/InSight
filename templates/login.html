@@ -1,0 +1,85 @@
+{% extends "layout.html" %}
+
+{% block title %}Login - {{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 75vh;">
+    <div class="col-md-5">
+        <div class="text-center mb-4">
+            <h1 class="display-4 fw-bold"><span class="text-info">Smart</span>Attendance</h1>
+            <p class="lead text-muted">Sign in to access your attendance dashboard</p>
+        </div>
+        
+        <div class="card shadow border-0">
+            <div class="card-header bg-gradient-primary text-white py-3">
+                <h3 class="mb-0 text-center"><i class="fas fa-sign-in-alt me-2"></i>Welcome Back</h3>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('login') }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-4">
+                        <label for="username" class="form-label">{{ form.username.label }}</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent border-end-0">
+                                <i class="fas fa-user text-primary"></i>
+                            </span>
+                            {{ form.username(class="form-control border-start-0", placeholder="Enter your username") }}
+                        </div>
+                        {% for error in form.username.errors %}
+                            <div class="text-danger mt-1 small">
+                                <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="password" class="form-label">{{ form.password.label }}</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent border-end-0">
+                                <i class="fas fa-lock text-primary"></i>
+                            </span>
+                            {{ form.password(class="form-control border-start-0", placeholder="Enter your password") }}
+                        </div>
+                        {% for error in form.password.errors %}
+                            <div class="text-danger mt-1 small">
+                                <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="d-grid gap-2 mt-4">
+                        {{ form.submit(class="btn btn-primary btn-lg", value="Sign In") }}
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer bg-light p-3 text-center">
+                <p class="mb-0">Don't have an account? <a href="{{ url_for('register') }}" class="fw-bold text-decoration-none">Register here</a></p>
+            </div>
+        </div>
+        
+        <div class="text-center mt-4">
+            <div class="row justify-content-center">
+                <div class="col-md-4 mb-3">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-user-shield text-info me-2 fs-4"></i>
+                        <div class="small text-start">
+                            <div class="fw-bold">Secure Access</div>
+                            <div class="text-muted">Facial recognition</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-chart-line text-info me-2 fs-4"></i>
+                        <div class="small text-start">
+                            <div class="fw-bold">Attendance Stats</div>
+                            <div class="text-muted">Real-time tracking</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

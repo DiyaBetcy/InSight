@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Enroll in Course - Facial Recognition Attendance System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="fas fa-user-plus me-2"></i>Enroll in Course</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('attendance.enroll_in_course') }}">
+                    <div class="mb-3">
+                        <label for="course_code" class="form-label">Course Code</label>
+                        <input type="text" class="form-control" id="course_code" name="course_code" required>
+                        <div class="form-text">Enter the course code provided by your teacher.</div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success w-100">Enroll</button>
+                </form>
+            </div>
+            <div class="card-footer text-center">
+                <a href="{{ url_for('attendance.student_dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

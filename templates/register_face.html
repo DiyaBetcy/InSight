@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Register Your Face - Facial Recognition Attendance System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-camera me-2"></i>Register Your Face</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Instructions:</strong> 
+                    <ul>
+                        <li>Position your face clearly in the camera view</li>
+                        <li>Ensure good lighting for better recognition</li>
+                        <li>Remove glasses and face coverings</li>
+                        <li>Keep a neutral facial expression</li>
+                    </ul>
+                </div>
+                
+                <div class="text-center mb-3">
+                    <div id="video-container" class="mb-3">
+                        <video id="video" width="100%" height="auto" autoplay playsinline></video>
+                    </div>
+                    
+                    <div id="capture-controls">
+                        <button id="capture-btn" class="btn btn-primary btn-lg">
+                            <i class="fas fa-camera me-2"></i>Capture Photo
+                        </button>
+                    </div>
+                    
+                    <div id="processing-indicator" class="mt-3 d-none">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Processing...</span>
+                        </div>
+                        <p class="mt-2">Processing your face data, please wait...</p>
+                    </div>
+                </div>
+                
+                <div id="result-container" class="d-none">
+                    <div id="success-result" class="d-none">
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <span>Your face has been registered successfully!</span>
+                        </div>
+                        
+                        <p>Your face data has been stored securely and will be used for marking your attendance in class.</p>
+                        
+                        <div class="text-center">
+                            <a href="{{ url_for('attendance.student_dashboard') }}" class="btn btn-primary">
+                                <i class="fas fa-home me-1"></i>Return to Dashboard
+                            </a>
+                            <button id="register-again-btn" class="btn btn-outline-secondary">
+                                <i class="fas fa-redo me-1"></i>Register Again
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="error-result" class="d-none">
+                        <div class="alert alert-danger" id="error-message">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            <span>Error processing your face data.</span>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button id="try-again-btn" class="btn btn-primary">
+                                <i class="fas fa-redo me-1"></i>Try Again
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const videoElement = document.getElementById('video');
+        const captureBtn = document.getElementById('capture-btn');
+        const processingIndicator = document.getElementById('processing-indicator');
+        const resultContainer = document.getElementById('result-container');
+        const successResult = document.getElementById('success-result');
+        const errorResult = document.getElementById('error-result');
+        const errorMessage = document.getElementById('error-message');
+        const tryAgainBtn = document.getElementById('try-again-btn');
+        const registerAgainBtn = document.getElementById('register-again-btn');
+        const videoContainer = document.getElementById('video-container');
+        const captureControls = document.getElementById('capture-controls');
+        
+        let stream = null;
+        
+        // Start video stream
+        async function startVideo() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'user' }, 
+                    audio: false 
+                });
+                videoElement.srcObject = stream;
+            } catch (err) {
+                console.error('Error accessing camera:', err);
+                showError('Could not access camera. Please allow camera access and try again.');
+            }
+        }
+        
+        // Stop video stream
+        function stopVideo() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                videoElement.srcObject = null;
+            }
+        }
+        
+        // Handle capture button click
+        captureBtn.addEventListener('click', function() {
+            captureControls.classList.add('d-none');
+            processingIndicator.classList.remove('d-none');
+            
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            const video = document.getElementById('video');
+            
+            // Set canvas dimensions to match video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // Draw the current video frame on the canvas
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Get the image data as base64 string
+            const imageData = canvas.toDataURL('image/jpeg');
+            
+            // Send the image to the server
+            fetch('{{ url_for("attendance.register_face") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ imageData: imageData }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                processingIndicator.classList.add('d-none');
+                resultContainer.classList.remove('d-none');
+                
+                if (data.success) {
+                    successResult.classList.remove('d-none');
+                    stopVideo();
+                } else {
+                    errorResult.classList.remove('d-none');
+                    errorMessage.innerHTML = `<i class="fas fa-exclamation-circle me-2"></i>${data.message}`;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                processingIndicator.classList.add('d-none');
+                resultContainer.classList.remove('d-none');
+                errorResult.classList.remove('d-none');
+                errorMessage.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i>A network error occurred. Please try again.';
+            });
+        });
+        
+        // Try again button
+        tryAgainBtn.addEventListener('click', function() {
+            errorResult.classList.add('d-none');
+            resultContainer.classList.add('d-none');
+            captureControls.classList.remove('d-none');
+        });
+        
+        // Register again button
+        registerAgainBtn.addEventListener('click', function() {
+            successResult.classList.add('d-none');
+            resultContainer.classList.add('d-none');
+            captureControls.classList.remove('d-none');
+            startVideo();
+        });
+        
+        // Show error
+        function showError(message) {
+            videoContainer.classList.add('d-none');
+            captureControls.classList.add('d-none');
+            resultContainer.classList.remove('d-none');
+            errorResult.classList.remove('d-none');
+            errorMessage.innerHTML = `<i class="fas fa-exclamation-circle me-2"></i>${message}`;
+        }
+        
+        // Start the video when the page loads
+        startVideo();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,139 @@
+/* Custom CSS for Facial Recognition Attendance System */
+
+/* General styles */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.footer {
+    margin-top: auto;
+}
+
+/* Card styles */
+.card {
+    border: none;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s;
+}
+
+.card-header {
+    border-bottom: none;
+}
+
+/* Dashboard stats cards */
+.stats-card {
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.stats-card .card-body {
+    padding: 1.5rem;
+}
+
+.stats-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+}
+
+/* Progress bar styling */
+.progress {
+    height: 10px;
+    border-radius: 5px;
+}
+
+/* Custom alert styles */
+.alert {
+    border-radius: 10px;
+    border: none;
+}
+
+/* Video container for face capture */
+.video-container {
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
+}
+
+/* Custom button styles */
+.btn-capture {
+    background-color: var(--bs-primary);
+    color: white;
+    border-radius: 50px;
+    padding: 10px 25px;
+    font-weight: bold;
+    border: none;
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
+    transition: all 0.3s;
+}
+
+.btn-capture:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.3);
+}
+
+.btn-capture:active {
+    transform: translateY(0);
+}
+
+/* Course cards */
+.course-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.course-card .card-body {
+    flex: 1;
+}
+
+/* Attendance table */
+.attendance-table th,
+.attendance-table td {
+    vertical-align: middle;
+}
+
+/* Student profile circle */
+.profile-circle {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Loading spinner overlay */
+.spinner-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+/* Attendance status colors */
+.status-present {
+    color: var(--bs-success);
+}
+
+.status-absent {
+    color: var(--bs-danger);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .stats-value {
+        font-size: 2rem;
+    }
+    
+    .display-5 {
+        font-size: 2rem;
+    }
+}

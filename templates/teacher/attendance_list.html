@@ -1,0 +1,159 @@
+{% extends "layout.html" %}
+
+{% block title %}Attendance List - {{ title }}{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('teacher_dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Attendance Records - {{ course.name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h3 class="mb-0"><i class="fas fa-list-alt me-2"></i>Attendance Records</h3>
+                <span class="badge bg-light text-dark">{{ course.name }}</span>
+            </div>
+            <div class="card-body">
+                {% if students and dates %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-bordered">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th style="min-width: 150px;">Student</th>
+                                    {% for date in dates %}
+                                        <th class="text-center">{{ date.strftime('%d/%m/%Y') }}</th>
+                                    {% endfor %}
+                                    <th class="text-center">Attendance %</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in students %}
+                                    <tr>
+                                        <td>{{ student.first_name }} {{ student.last_name }}</td>
+                                        
+                                        {% for date in dates %}
+                                            {% set date_str = date.isoformat() %}
+                                            {% set status = attendance_data[student.id]['records'].get(date_str, False) %}
+                                            
+                                            <td class="text-center">
+                                                {% if status %}
+                                                    <span class="text-success"><i class="fas fa-check"></i></span>
+                                                {% else %}
+                                                    <span class="text-danger"><i class="fas fa-times"></i></span>
+                                                {% endif %}
+                                            </td>
+                                        {% endfor %}
+                                        
+                                        {% set records = attendance_data[student.id]['records'] %}
+                                        {% set attendance_count = records.values()|list|sum %}
+                                        {% set total_days = records|length %}
+                                        {% set percentage = (attendance_count / total_days * 100) if total_days > 0 else 0 %}
+                                        
+                                        <td class="text-center">
+                                            <span class="badge {% if percentage >= 75 %}bg-success{% elif percentage >= 50 %}bg-warning{% else %}bg-danger{% endif %}">
+                                                {{ percentage|round(1) }}%
+                                            </span>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h4>Class Attendance Summary</h4>
+                        <canvas id="attendanceChart" height="200"></canvas>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        No attendance records found for this course.
+                    </div>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('capture_attendance', course_id=course.id) }}" class="btn btn-primary">
+                    <i class="fas fa-camera me-1"></i> Take New Attendance
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% if dates and students %}
+        // Prepare data for chart
+        const dateLabels = [{% for date in dates %}'{{ date.strftime("%d/%m/%Y") }}',{% endfor %}];
+        
+        // Count total present students for each date
+        const presentData = [];
+        
+        {% for date in dates %}
+            {% set date_str = date.isoformat() %}
+            let presentCount = 0;
+            
+            {% for student in students %}
+                {% if attendance_data[student.id]['records'].get(date_str, False) %}
+                    presentCount += 1;
+                {% endif %}
+            {% endfor %}
+            
+            presentData.push(presentCount);
+        {% endfor %}
+        
+        // Create chart
+        const ctx = document.getElementById('attendanceChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dateLabels,
+                datasets: [{
+                    label: 'Students Present',
+                    data: presentData,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.1,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: {{ students|length }},
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            footer: function(tooltipItems) {
+                                const index = tooltipItems[0].dataIndex;
+                                const total = {{ students|length }};
+                                const present = presentData[index];
+                                const percentage = (present / total * 100).toFixed(1);
+                                return `Attendance: ${percentage}%`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    {% endif %}
+});
+</script>
+{% endblock %}

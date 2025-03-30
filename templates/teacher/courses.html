@@ -1,0 +1,161 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Manage Courses</h1>
+    
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Create New Course</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('manage_courses') }}">
+                        {{ form.hidden_tag() }}
+                        <div class="mb-3">
+                            {{ form.name.label(class="form-label") }}
+                            {{ form.name(class="form-control") }}
+                            {% for error in form.name.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control", rows=3) }}
+                            {% for error in form.description.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="d-grid">
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Your Courses</h5>
+                </div>
+                <div class="card-body">
+                    {% if courses %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Course Name</th>
+                                        <th>Description</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for course in courses %}
+                                        <tr>
+                                            <td>{{ course.name }}</td>
+                                            <td>{{ course.description }}</td>
+                                            <td>
+                                                <a href="{{ url_for('capture_attendance', course_id=course.id) }}" class="btn btn-sm btn-primary">Take Attendance</a>
+                                                <a href="{{ url_for('attendance_list', course_id=course.id) }}" class="btn btn-sm btn-secondary">View Records</a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            You haven't created any courses yet. Use the form to create your first course.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="enrollStudentModal" tabindex="-1" aria-labelledby="enrollStudentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="enrollStudentModalLabel">Enroll Student</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="student-email" class="form-label">Student Email</label>
+                    <input type="email" class="form-control" id="student-email" required>
+                </div>
+                <div id="enroll-message"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="enroll-btn">Enroll Student</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Setup enrollment modal
+        const enrollBtns = document.querySelectorAll('.enroll-student-btn');
+        const enrollBtn = document.getElementById('enroll-btn');
+        const studentEmailInput = document.getElementById('student-email');
+        const enrollMessage = document.getElementById('enroll-message');
+        let currentCourseId = null;
+        
+        enrollBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                currentCourseId = this.dataset.courseId;
+                studentEmailInput.value = '';
+                enrollMessage.innerHTML = '';
+            });
+        });
+        
+        if (enrollBtn) {
+            enrollBtn.addEventListener('click', function() {
+                const studentEmail = studentEmailInput.value.trim();
+                
+                if (!studentEmail) {
+                    enrollMessage.innerHTML = '<div class="alert alert-danger">Please enter a student email</div>';
+                    return;
+                }
+                
+                enrollMessage.innerHTML = '<div class="text-center"><div class="spinner-border spinner-border-sm" role="status"></div> Enrolling student...</div>';
+                
+                fetch('/api/enroll_student', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        course_id: currentCourseId,
+                        student_email: studentEmail
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        enrollMessage.innerHTML = `<div class="alert alert-success">${data.message}</div>`;
+                        // Reload after 1 second
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    } else {
+                        enrollMessage.innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    enrollMessage.innerHTML = '<div class="alert alert-danger">An error occurred. Please try again.</div>';
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

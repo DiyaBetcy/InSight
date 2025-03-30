@@ -1,0 +1,353 @@
+{% extends "layout.html" %}
+
+{% block title %}Capture Attendance - {{ title }}{% endblock %}
+
+{% block head %}
+<style>
+    #video-container {
+        position: relative;
+        max-width: 100%;
+        margin: 0 auto;
+    }
+    
+    #video {
+        width: 100%;
+        border-radius: 8px;
+    }
+    
+    #capture-result {
+        margin-top: 15px;
+    }
+    
+    #captured-image {
+        max-width: 100%;
+        border-radius: 8px;
+        display: none;
+    }
+    
+    #loading-indicator {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('teacher_dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Capture Attendance - {{ course.name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h3 class="mb-0"><i class="fas fa-camera me-2"></i>Capture Class Attendance</h3>
+                <span class="badge bg-light text-dark">{{ course.name }}</span>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Position the camera to capture all students' faces clearly. Make sure there is adequate lighting.
+                </div>
+                
+                <div id="video-container" class="mb-3">
+                    <video id="video" autoplay playsinline></video>
+                    <div id="loading-indicator" class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                    <button id="start-camera" class="btn btn-primary">
+                        <i class="fas fa-video me-1"></i> Start Camera
+                    </button>
+                    <button id="capture-photo" class="btn btn-success" disabled>
+                        <i class="fas fa-camera me-1"></i> Capture Photo
+                    </button>
+                    <button id="process-attendance" class="btn btn-info" disabled>
+                        <i class="fas fa-user-check me-1"></i> Process Attendance
+                    </button>
+                </div>
+                
+                <div id="capture-result" class="mt-4">
+                    <img id="captured-image" class="img-fluid" src="" alt="Captured image">
+                    
+                    <div id="attendance-results" class="mt-3" style="display: none;">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h4 class="mb-0">Attendance Results</h4>
+                            </div>
+                            <div class="card-body">
+                                <div id="result-message" class="alert alert-success"></div>
+                                
+                                <h5>Recognized Students:</h5>
+                                <ul id="recognized-students" class="list-group">
+                                    <!-- Recognized students will be listed here -->
+                                </ul>
+                            </div>
+                            <div class="card-footer">
+                                <a href="{{ url_for('attendance_list', course_id=course.id) }}" class="btn btn-primary">
+                                    <i class="fas fa-list me-1"></i> View Attendance Records
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col">
+        <div class="card shadow">
+            <div class="card-header bg-secondary text-white">
+                <h3 class="mb-0"><i class="fas fa-users me-2"></i>Enrolled Students</h3>
+            </div>
+            <div class="card-body">
+                {% if students %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Face Recognition Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in students %}
+                                <tr>
+                                    <td>{{ student.first_name }} {{ student.last_name }}</td>
+                                    <td>
+                                        {% if student.face_encoding %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i> Ready
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="fas fa-exclamation-triangle me-1"></i> No face data
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        No students enrolled in this course yet.
+                    </div>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#enrollStudentModal">
+                    <i class="fas fa-user-plus me-1"></i> Enroll Student
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Enroll Student Modal -->
+<div class="modal fade" id="enrollStudentModal" tabindex="-1" aria-labelledby="enrollStudentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="enrollStudentModalLabel">Enroll Student</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="studentEmail" class="form-label">Student Email</label>
+                    <input type="email" class="form-control" id="studentEmail" placeholder="Enter student email">
+                    <div class="form-text">Enter the email address of the student you want to enroll.</div>
+                </div>
+                <div id="enrollmentMessage"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="enrollStudentBtn">Enroll</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let stream = null;
+    let video = document.getElementById('video');
+    let canvas = document.createElement('canvas');
+    let capturedImage = null;
+    
+    // Initialize camera and buttons
+    document.getElementById('start-camera').addEventListener('click', async function() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    facingMode: "environment" 
+                } 
+            });
+            video.srcObject = stream;
+            
+            this.disabled = true;
+            document.getElementById('capture-photo').disabled = false;
+        } catch (err) {
+            console.error('Error accessing camera:', err);
+            alert('Failed to access camera. Please check permissions and try again.');
+        }
+    });
+    
+    // Capture photo
+    document.getElementById('capture-photo').addEventListener('click', function() {
+        if (stream) {
+            // Set canvas dimensions to match video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // Draw the current video frame to canvas
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Convert to base64 image
+            capturedImage = canvas.toDataURL('image/jpeg');
+            
+            // Display the captured image
+            document.getElementById('captured-image').src = capturedImage;
+            document.getElementById('captured-image').style.display = 'block';
+            
+            // Enable process button
+            document.getElementById('process-attendance').disabled = false;
+            
+            // Hide attendance results from previous capture
+            document.getElementById('attendance-results').style.display = 'none';
+        }
+    });
+    
+    // Process attendance
+    document.getElementById('process-attendance').addEventListener('click', async function() {
+        if (!capturedImage) {
+            alert('Please capture a photo first');
+            return;
+        }
+        
+        // Show loading indicator
+        document.getElementById('loading-indicator').style.display = 'block';
+        this.disabled = true;
+        
+        try {
+            // Send the image to the server for processing
+            const response = await fetch('/teacher/process_attendance', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    image: capturedImage,
+                    course_id: {{ course.id }}
+                })
+            });
+            
+            const data = await response.json();
+            
+            // Hide loading indicator
+            document.getElementById('loading-indicator').style.display = 'none';
+            this.disabled = false;
+            
+            // Display results
+            document.getElementById('attendance-results').style.display = 'block';
+            
+            if (data.success) {
+                document.getElementById('result-message').className = 'alert alert-success';
+                document.getElementById('result-message').textContent = data.message;
+                
+                // List recognized students
+                const studentsList = document.getElementById('recognized-students');
+                studentsList.innerHTML = '';
+                
+                if (data.recognized_students && data.recognized_students.length > 0) {
+                    data.recognized_students.forEach(student => {
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item';
+                        li.innerHTML = `<i class="fas fa-user-check me-2 text-success"></i> ${student}`;
+                        studentsList.appendChild(li);
+                    });
+                } else {
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item';
+                    li.innerHTML = '<i class="fas fa-exclamation-circle me-2 text-warning"></i> No students recognized';
+                    studentsList.appendChild(li);
+                }
+            } else {
+                document.getElementById('result-message').className = 'alert alert-danger';
+                document.getElementById('result-message').textContent = 'Error: ' + data.message;
+            }
+        } catch (error) {
+            // Hide loading indicator
+            document.getElementById('loading-indicator').style.display = 'none';
+            this.disabled = false;
+            
+            console.error('Error processing attendance:', error);
+            alert('Failed to process attendance. Please try again.');
+        }
+    });
+    
+    // Enroll student
+    document.getElementById('enrollStudentBtn').addEventListener('click', async function() {
+        const studentEmail = document.getElementById('studentEmail').value.trim();
+        const messageElement = document.getElementById('enrollmentMessage');
+        
+        if (!studentEmail) {
+            messageElement.innerHTML = '<div class="alert alert-danger">Please enter student email</div>';
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/enroll_student', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    student_email: studentEmail,
+                    course_id: {{ course.id }}
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                messageElement.innerHTML = `<div class="alert alert-success">${data.message}</div>`;
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            } else {
+                messageElement.innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
+            }
+        } catch (error) {
+            console.error('Error enrolling student:', error);
+            messageElement.innerHTML = '<div class="alert alert-danger">Failed to enroll student. Please try again.</div>';
+        }
+    });
+    
+    // Clean up when leaving page
+    window.addEventListener('beforeunload', () => {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+    });
+</script>
+{% endblock %}
