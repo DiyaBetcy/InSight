@@ -47,7 +47,7 @@ A face-recognition based web application to automate student attendance marking.
 ## Contributors
 1. Diya Betcy (@DiyaBetcy)
 ## License
-This project is licensed under the MIT License.
+This project is licensed under the [MIT License](LICENSE).
 
 ## Screenshots
 ### Sign in page
