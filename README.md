@@ -53,7 +53,7 @@ This project is licensed under the MIT License.
 ### Sign in page
 ![sign in page](screenshots/sign%20in%20page.jpg)
 ### Profile page
-![Profile page](screenshots/profile.jpg)
+![Profile page](screenshots/Profile.jpg)
 ### Dashboard
 ![Dashboard](screenshots/dashboard.jpg)
 
