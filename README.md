@@ -43,13 +43,19 @@ A face-recognition based web application to automate student attendance marking.
 4. **Run the application**
    ```bash
    python app.py
+   
 ## Contributors
 1. Diya Betcy (@DiyaBetcy)
 ## License
 This project is licensed under the MIT License.
 
 ## Screenshots
-
+### Sign in page
+![sign in page](screenshots/sign%20in%20page.jpg)
+### Profile page
+![Profile page](screenshots/Profile.jpg)
+### Dashboard
+![Dashboard](screenshots/dashboard.jpg)
 
 ## Future Improvements
 - Admin dashboard for global analytics
