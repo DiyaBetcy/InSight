@@ -43,3 +43,5 @@ A face-recognition based web application to automate student attendance marking.
 4. **Run the application**
    ```bash
    python app.py
+## Contributors
+1. Diya Betcy (@DiyaBetcy)
