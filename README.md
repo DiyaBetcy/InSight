@@ -50,7 +50,7 @@ This project is licensed under the MIT License.
 
 ## Screenshots
 ### Sign in page
-![sign in page](screenshots/sign in page.jpg)
+![sign in page](screenshots/sign%20in%20page.jpg)
 
 ## Future Improvements
 - Admin dashboard for global analytics
