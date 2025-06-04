@@ -49,7 +49,8 @@ A face-recognition based web application to automate student attendance marking.
 This project is licensed under the MIT License.
 
 ## Screenshots
-
+### Sign in page
+![sign in page](screenshots/sign in page.jpg)
 
 ## Future Improvements
 - Admin dashboard for global analytics
